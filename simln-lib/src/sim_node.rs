@@ -15,17 +15,17 @@ use std::time::UNIX_EPOCH;
 use tokio::task::JoinSet;
 use tokio_util::task::TaskTracker;
 
-use lightning::ln::features::{ChannelFeatures, NodeFeatures};
 use lightning::ln::msgs::{
     LightningError as LdkError, UnsignedChannelAnnouncement, UnsignedChannelUpdate,
 };
-use lightning::ln::{PaymentHash, PaymentPreimage};
 use lightning::routing::gossip::{NetworkGraph, NodeId};
 use lightning::routing::router::{find_route, Path, PaymentParameters, Route, RouteParameters};
 use lightning::routing::scoring::{
     ProbabilisticScorer, ProbabilisticScoringDecayParameters, ScoreUpdate,
 };
 use lightning::routing::utxo::{UtxoLookup, UtxoResult};
+use lightning::types::features::{ChannelFeatures, NodeFeatures};
+use lightning::types::payment::{PaymentHash, PaymentPreimage};
 use lightning::util::logger::{Level, Logger, Record};
 use thiserror::Error;
 use tokio::select;
@@ -645,7 +645,7 @@ async fn find_payment_route(
         &Default::default(),
         &[0; 32],
     )
-    .map_err(|e| SimulationError::SimulatedNetworkError(e.err))
+    .map_err(|e| SimulationError::SimulatedNetworkError(e.to_string()))
 }
 
 #[async_trait]
@@ -1159,7 +1159,7 @@ pub fn populate_network_graph<C: Clock>(
                 &channel.node_1.policy.pubkey,
                 &channel.node_2.policy.pubkey,
             )
-            .to_v0_p2wsh(),
+            .to_p2wsh(),
         };
 
         graph.update_channel_from_unsigned_announcement(&announcement, &Some(&utxo_validator))?;
@@ -1172,9 +1172,11 @@ pub fn populate_network_graph<C: Clock>(
                 chain_hash,
                 short_channel_id: channel.short_channel_id.into(),
                 timestamp: now,
+                // message_flags bit 0 indicates htlc_maximum_msat is present (required since LDK 0.2).
+                message_flags: 1,
                 // The least significant bit of the channel flag field represents the direction that the channel update
                 // applies to. This value is interpreted as node_1 if it is zero, and node_2 otherwise.
-                flags: i as u8,
+                channel_flags: i as u8,
                 cltv_expiry_delta: node.policy.cltv_expiry_delta as u16,
                 htlc_minimum_msat: node.policy.min_htlc_size_msat,
                 htlc_maximum_msat: node.policy.max_htlc_size_msat,
@@ -1609,7 +1611,7 @@ struct UtxoValidator {
 impl UtxoLookup for UtxoValidator {
     fn get_utxo(&self, _genesis_hash: &ChainHash, _short_channel_id: u64) -> UtxoResult {
         UtxoResult::Sync(Ok(TxOut {
-            value: self.amount_sat,
+            value: bitcoin::Amount::from_sat(self.amount_sat),
             script_pubkey: self.script.clone(),
         }))
     }

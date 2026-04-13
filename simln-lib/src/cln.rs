@@ -8,8 +8,8 @@ use cln_grpc::pb::{
     KeysendRequest, KeysendResponse, ListchannelsRequest, ListnodesRequest, ListpaysRequest,
     ListpaysResponse,
 };
-use lightning::ln::features::NodeFeatures;
-use lightning::ln::PaymentHash;
+use lightning::types::features::NodeFeatures;
+use lightning::types::payment::PaymentHash;
 use serde::{Deserialize, Serialize};
 use tokio::fs::File;
 use tokio::io::{AsyncReadExt, Error};
@@ -94,7 +94,7 @@ impl ClnNode {
 
         let pubkey = PublicKey::from_slice(&info.id)
             .map_err(|err| LightningError::GetInfoError(err.to_string()))?;
-        let mut alias = info.alias.unwrap_or_default();
+        let mut alias = info.alias;
         connection.id.validate(&pubkey, &mut alias)?;
 
         let features = match info.our_features {
@@ -216,8 +216,8 @@ impl LightningNode for ClnNode {
                         .into_inner();
 
                     if let Some(pay) = pays.first() {
-                        let payment_status = ListpaysPaysStatus::from_i32(pay.status)
-                            .ok_or(LightningError::TrackPaymentError("Invalid payment status".to_string()))?;
+                        let payment_status = ListpaysPaysStatus::try_from(pay.status)
+                            .map_err(|_| LightningError::TrackPaymentError("Invalid payment status".to_string()))?;
 
                         let payment_outcome = match payment_status {
                             ListpaysPaysStatus::Pending => continue,
