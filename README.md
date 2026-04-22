@@ -16,7 +16,7 @@ lightning network development. It may be useful to you if you are:
 * LND ✅
 * CLN ✅
 * Eclair ✅️
-* LDK-node 🏗️
+* LDK-server ✅
 
 See our [tracking issue](https://github.com/bitcoin-dev-project/sim-ln/issues/26)
 for updates on implementation support (contributions welcome!).
@@ -36,6 +36,7 @@ of the simulator uses keysend to execute payments, which must be enabled as foll
 * LND: `--accept-keysend`
 * CLN: enabled by default
 * Eclair: `-Declair.features.keysend=optional` (or `--features.keysend=optional` if you're using Polar)
+* LDK-server: enabled by default via `spontaneous_send`
 
 NOTE: for CLN `keysend` to work with eclair, you need to add additional config to eclair:
 ```
@@ -43,6 +44,11 @@ NOTE: for CLN `keysend` to work with eclair, you need to add additional config t
 -Declair.channel.fulfill-safety-before-timeout-blocks=M
 ```
 where N and M are numbers, and N must be larger than M (N must be 22, CLN's default, or more)
+
+NOTE: ldk-server enforces a minimum final CLTV expiry of 144 blocks on inbound keysend payments.
+If you are sending from LND or CLN, set their final CLTV delta to at least 150:
+* LND: `bitcoin.timelockdelta=150` in `lnd.conf`
+* CLN: `cltv-final=150` in `config`
 
 ## Getting Started
 
@@ -98,6 +104,18 @@ The required access details will depend on the node implementation.
   "api_password": <password_to_authorize>
 }
 ```
+* LDK-server:
+```
+{
+  "address": <ip:port or domain:port>,
+  "api_key": <hex_encoded_api_key>,
+  "cert": <path_to_tls_cert>,
+  "network": <bitcoin|testnet|signet|regtest>
+}
+```
+The `api_key` is the raw bytes of `~/.ldk-server/<network>/api_key` hex-encoded.
+Unlike other backends, ldk-server does not require an `id` field — the node's
+public key is fetched automatically on startup.
 
 Payment activity can be simulated in two different ways:
 * [Random activity](#setup---random-activity): generate random activity on the `nodes` provided, 
@@ -135,6 +153,12 @@ to send and receive payments when running with random activity.
       "base_url": "127.0.0.1:8286",
       "api_username": "",
       "api_password": "eclairpw"
+    },
+    {
+      "address": "localhost:3536",
+      "api_key": "ldk_server_hex_encoded_api_key",
+      "cert": "/path/tls.crt",
+      "network": "signet"
     }
   ]
 }
