@@ -45,11 +45,6 @@ NOTE: for CLN `keysend` to work with eclair, you need to add additional config t
 ```
 where N and M are numbers, and N must be larger than M (N must be 22, CLN's default, or more)
 
-NOTE: ldk-server enforces a minimum final CLTV expiry of 144 blocks on inbound keysend payments.
-If you are sending from LND or CLN, set their final CLTV delta to at least 150:
-* LND: `bitcoin.timelockdelta=150` in `lnd.conf`
-* CLN: `cltv-final=150` in `config`
-
 ## Getting Started
 
 Once you have all the pre-requisites installed, clone the repo:
@@ -116,6 +111,12 @@ The required access details will depend on the node implementation.
 The `api_key` is the raw bytes of `~/.ldk-server/<network>/api_key` hex-encoded.
 Unlike other backends, ldk-server does not require an `id` field — the node's
 public key is fetched automatically on startup.
+
+Note: ldk-server channels are **unannounced by default**. Pass `--announce-channel`
+to `open-channel` (and set `announcement_addresses` in the ldk-server config) to
+make channels public and visible to other nodes for routing. Also ldk-server enforces a minimum final CLTV expiry delta
+of **144 blocks** on inbound keysend payments. Ensure that sending nodes are configured with a sufficiently high final
+CLTV delta.
 
 Payment activity can be simulated in two different ways:
 * [Random activity](#setup---random-activity): generate random activity on the `nodes` provided, 
