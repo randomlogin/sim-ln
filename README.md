@@ -104,13 +104,12 @@ The required access details will depend on the node implementation.
 {
   "address": <ip:port or domain:port>,
   "api_key": <hex_encoded_api_key>,
-  "cert": <path_to_tls_cert>,
-  "network": <bitcoin|testnet|signet|regtest>
+  "cert": <path_to_tls_cert>
 }
 ```
 The `api_key` is the raw bytes of `~/.ldk-server/<network>/api_key` hex-encoded.
 Unlike other backends, ldk-server does not require an `id` field — the node's
-public key is fetched automatically on startup.
+public key and network are fetched automatically on startup.
 
 Note: ldk-server channels are **unannounced by default**. Pass `--announce-channel`
 to `open-channel` (and set `announcement_addresses` in the ldk-server config) to
@@ -158,8 +157,7 @@ to send and receive payments when running with random activity.
     {
       "address": "localhost:3536",
       "api_key": "ldk_server_hex_encoded_api_key",
-      "cert": "/path/tls.crt",
-      "network": "signet"
+      "cert": "/path/tls.crt"
     }
   ]
 }

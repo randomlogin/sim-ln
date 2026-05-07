@@ -34,7 +34,6 @@ pub struct LdkConnection {
     pub api_key: String,
     #[serde(deserialize_with = "serializers::deserialize_path")]
     pub cert: String,
-    pub network: Network,
 }
 
 impl LdkNode {
@@ -62,6 +61,7 @@ impl LdkNode {
         let pubkey = PublicKey::from_str(&info.node_id)
             .map_err(|err| LightningError::GetInfoError(err.to_string()))?;
         let alias = info.node_alias.unwrap_or_default();
+        let network = network_from_proto(info.network)?;
 
         // ldk-server doesn't expose feature bits, but it always supports keysend
         // via `spontaneous_send`, so advertise it so sim-ln's keysend checks pass.
@@ -75,7 +75,7 @@ impl LdkNode {
                 features,
                 alias,
             },
-            network: connection.network,
+            network,
         })
     }
 }
@@ -244,6 +244,20 @@ impl LightningNode for LdkNode {
         }
 
         Ok(Graph { nodes_by_pk })
+    }
+}
+
+/// Convert the `types.Network` proto enum (encoded as i32) returned by
+/// ldk-server's GetNodeInfo into a `bitcoin::Network`.  
+fn network_from_proto(value: i32) -> Result<Network, LightningError> {
+    match value {
+        0 => Ok(Network::Bitcoin),
+        1 => Ok(Network::Testnet),
+        3 => Ok(Network::Signet),
+        4 => Ok(Network::Regtest),
+        other => Err(LightningError::GetInfoError(format!(
+            "ldk-server returned unsupported network value: {other}"
+        ))),
     }
 }
 
