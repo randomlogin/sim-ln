@@ -16,7 +16,7 @@ lightning network development. It may be useful to you if you are:
 * LND ✅
 * CLN ✅
 * Eclair ✅️
-* LDK-server ✅
+* LDK-Server ✅
 
 See our [tracking issue](https://github.com/bitcoin-dev-project/sim-ln/issues/26)
 for updates on implementation support (contributions welcome!).
@@ -36,7 +36,7 @@ of the simulator uses keysend to execute payments, which must be enabled as foll
 * LND: `--accept-keysend`
 * CLN: enabled by default
 * Eclair: `-Declair.features.keysend=optional` (or `--features.keysend=optional` if you're using Polar)
-* LDK-server: enabled by default via `spontaneous_send`
+* LDK-Server: enabled by default via `spontaneous_send`
 
 NOTE: for CLN `keysend` to work with eclair, you need to add additional config to eclair:
 ```
@@ -99,7 +99,7 @@ The required access details will depend on the node implementation.
   "api_password": <password_to_authorize>
 }
 ```
-* LDK-server:
+* LDK-Server:
 ```
 {
   "address": <ip:port or domain:port>,

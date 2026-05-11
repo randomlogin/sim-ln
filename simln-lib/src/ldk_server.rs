@@ -22,22 +22,22 @@ use crate::{
     serializers, Graph, LightningError, LightningNode, NodeInfo, PaymentOutcome, PaymentResult,
 };
 
-pub struct LdkNode {
+pub struct LdkServerNode {
     client: LdkServerClient,
     info: NodeInfo,
     network: Network,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct LdkConnection {
+pub struct LdkServerConnection {
     pub address: String,
     pub api_key: String,
     #[serde(deserialize_with = "serializers::deserialize_path")]
     pub cert: String,
 }
 
-impl LdkNode {
-    pub async fn new(connection: LdkConnection) -> Result<Self, LightningError> {
+impl LdkServerNode {
+    pub async fn new(connection: LdkServerConnection) -> Result<Self, LightningError> {
         let cert_pem = std::fs::read(&connection.cert).map_err(|err| {
             LightningError::ConnectionError(format!("Cannot load TLS cert: {err}"))
         })?;
@@ -81,7 +81,7 @@ impl LdkNode {
 }
 
 #[async_trait]
-impl LightningNode for LdkNode {
+impl LightningNode for LdkServerNode {
     fn get_info(&self) -> &NodeInfo {
         &self.info
     }
@@ -253,6 +253,9 @@ fn network_from_proto(value: i32) -> Result<Network, LightningError> {
     match value {
         0 => Ok(Network::Bitcoin),
         1 => Ok(Network::Testnet),
+        2 => Err(LightningError::GetInfoError(format!(
+            "testnet4 network is not supported"
+        ))),
         3 => Ok(Network::Signet),
         4 => Ok(Network::Regtest),
         other => Err(LightningError::GetInfoError(format!(
