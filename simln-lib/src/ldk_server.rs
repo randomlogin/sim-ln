@@ -101,6 +101,7 @@ impl LightningNode for LdkServerNode {
                 amount_msat,
                 node_id: dest.to_string(),
                 route_parameters: None,
+                custom_tlvs: Vec::new(),
             })
             .await
             .map_err(ldk_server_error_to_send_error)?;
