@@ -63,10 +63,7 @@ impl LdkServerNode {
         let alias = info.node_alias.unwrap_or_default();
         let network = network_from_proto(info.network)?;
 
-        // ldk-server doesn't expose feature bits, but it always supports keysend
-        // via `spontaneous_send`, so advertise it so sim-ln's keysend checks pass.
-        let mut features = NodeFeatures::empty();
-        features.set_keysend_optional();
+        let features = parse_node_features(info.features.keys().copied());
 
         Ok(Self {
             client,
@@ -263,6 +260,22 @@ fn network_from_proto(value: i32) -> Result<Network, LightningError> {
             "ldk-server returned unsupported network value: {other}"
         ))),
     }
+}
+
+/// Convert the BOLT feature bits advertised by ldk-server (keyed by feature bit number) into LDK's
+/// NodeFeatures by setting the corresponding bit for each advertised feature.
+fn parse_node_features(bits: impl IntoIterator<Item = u32>) -> NodeFeatures {
+    let mut flags = Vec::new();
+
+    for bit in bits {
+        let byte_offset = (bit / 8) as usize;
+        if flags.len() <= byte_offset {
+            flags.resize(byte_offset + 1, 0u8);
+        }
+        flags[byte_offset] |= 1 << (bit % 8);
+    }
+
+    NodeFeatures::from_le_bytes(flags)
 }
 
 fn string_to_payment_hash(hash: &str) -> Result<PaymentHash, LightningError> {
