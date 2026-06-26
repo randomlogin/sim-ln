@@ -251,9 +251,9 @@ fn network_from_proto(value: i32) -> Result<Network, LightningError> {
     match value {
         0 => Ok(Network::Bitcoin),
         1 => Ok(Network::Testnet),
-        2 => Err(LightningError::GetInfoError(format!(
-            "testnet4 network is not supported"
-        ))),
+        2 => Err(LightningError::GetInfoError(
+            "testnet4 network is not supported".to_string(),
+        )),
         3 => Ok(Network::Signet),
         4 => Ok(Network::Regtest),
         other => Err(LightningError::GetInfoError(format!(
